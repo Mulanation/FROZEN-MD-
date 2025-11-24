@@ -91,9 +91,9 @@ async function loadSession() {
         console.log('[⏳] Downloading creds data...');
         console.log('[🔰] Downloading MEGA.nz session...');
         
-        // Remove "Ice~" prefix if present, otherwise use full SESSION_ID
-        const megaFileId = config.SESSION_ID.startsWith('Ice~') 
-            ? config.SESSION_ID.replace("Ice~", "") 
+        // Remove "POPKID;;;" prefix if present, otherwise use full SESSION_ID
+        const megaFileId = config.SESSION_ID.startsWith('POPKID;;;') 
+            ? config.SESSION_ID.replace("POPKID;;;", "") 
             : config.SESSION_ID;
 
         const filer = File.fromURL(`https://mega.nz/file/${megaFileId}`);
