@@ -5,61 +5,68 @@ const { ytsearch, ytmp3, ytmp4 } = require('@dark-yasiya/yt-dl.js');
 // video
 
 cmd({
-    pattern: "song",
-    alias: ["video", "ytv"],
-    react: "🎬",
-    desc: "Download YouTube video",
+    pattern: "play",
+    alias: ["audio", "yta"],
+    react: "🎵",
+    desc: "Play & download YouTube audio",
     category: "downloader",
-    use: ".mp4 <query/url>",
+    use: ".play <song name/url>",
     filename: __filename
 }, async (conn, mek, m, { from, q, reply }) => {
     try {
-        if (!q) return reply("🎬 Please provide video name/URL");
-        
-        // 1. Indicate processing
+        if (!q) return reply("🎵 Please provide a song name or YouTube URL.");
+
+        // React loading
         await conn.sendMessage(from, { react: { text: '⏳', key: m.key } });
-        
-        // 2. Search YouTube
+
+        // Search YouTube
         const yt = await ytsearch(q);
         if (!yt?.results?.length) {
             await conn.sendMessage(from, { react: { text: '❌', key: m.key } });
-            return reply("No results found");
+            return reply("No results found.");
         }
-        
-        const vid = yt.results[0];
-        
-        // 3. Fetch video
-        const api = `https://api-aswin-sparky.koyeb.app/api/downloader/ytv?url=${encodeURIComponent(vid.url)}`;
-        const res = await fetch(api);
-        const json = await res.json();
-        
-        if (!json?.data?.downloadURL) {
+
+        const song = yt.results[0];
+
+        // Fetch audio
+        const apiUrl = `https://apiskeith.vercel.app/download/audio?url=${encodeURIComponent(song.url)}`;
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        if (!data?.status || !data?.result) {
             await conn.sendMessage(from, { react: { text: '❌', key: m.key } });
-            return reply("Download failed");
+            return reply("Audio download failed.");
         }
-        
-        // 4. Create stylish caption
+
+        // Caption
         const caption = `
-╭─〔 *🎥 KHAN-MD DOWNLOADER* 〕
-├─▸ *📌 Title:* ${vid.title}
-├─▸ *⏳ Duration:* ${vid.timestamp}
-├─▸ *👀 Views:* ${vid.views}
-├─▸ *👤 Author:* ${vid.author.name}
-╰─➤ *Powered by FROZEN-MD*`;
-        
-        // 5. Send video with formatted caption
+╭─〔 *🎶 SONG DOWNLOADER* 〕
+├─▸ *🎧 Title:* ${song.title}
+├─▸ *⏳ Duration:* ${song.timestamp}
+├─▸ *👀 Views:* ${song.views}
+├─▸ *👤 Author:* ${song.author.name}
+╰─➤ *Made by Iconic Tech*
+        `.trim();
+
+        // Send thumbnail + info
         await conn.sendMessage(from, {
-            video: { url: json.data.downloadURL },
-            caption: caption
+            image: { url: song.thumbnail },
+            caption
         }, { quoted: mek });
-        
-        // 6. Success reaction
+
+        // Send audio
+        await conn.sendMessage(from, {
+            audio: { url: data.result },
+            mimetype: "audio/mp4",
+            fileName: `${song.title}.mp3`
+        }, { quoted: mek });
+
         await conn.sendMessage(from, { react: { text: '✅', key: m.key } });
-        
+
     } catch (e) {
         console.error(e);
         await conn.sendMessage(from, { react: { text: '❌', key: m.key } });
-        reply("Error occurred");
+        reply("Error occurred while processing.");
     }
 });
 
@@ -81,12 +88,13 @@ cmd({
         if (yt.results.length < 1) return reply("No results found!");
         
         let yts = yt.results[0];  
-        let apiUrl = `https://apis.davidcyriltech.my.id/download/ytmp4?url=${encodeURIComponent(yts.url)}`;
         
+        // Use working API from case
+        let apiUrl = `https://apiskeith.vercel.app/download/video?url=${encodeURIComponent(yts.url)}`;
         let response = await fetch(apiUrl);
         let data = await response.json();
         
-        if (data.status !== 200 || !data.success || !data.result.download_url) {
+        if (!data?.status || !data?.result) {
             return reply("Failed to fetch the video. Please try again later.");
         }
         
@@ -97,16 +105,21 @@ cmd({
 ┇๏ *Duration* - ${yts.timestamp}
 ┇๏ *Views* -  ${yts.views}
 ┇๏ *Author* -  ${yts.author.name}
-╰━━❑━⪼`;
+╰━━❑━⪼
+*Made by Iconic Tech*`;
 
         // Send video details
-        await conn.sendMessage(from, { image: { url: data.result.thumbnail || '' }, caption: ytmsg }, { quoted: mek });
+        await conn.sendMessage(from, { image: { url: yts.thumbnail || '' }, caption: ytmsg }, { quoted: mek });
         
         // Send video file
-        await conn.sendMessage(from, { video: { url: data.result.download_url }, mimetype: "video/mp4" }, { quoted: mek });
+        await conn.sendMessage(from, { 
+            video: { url: data.result }, 
+            mimetype: "video/mp4",
+            caption: "*Made by Iconic Tech*"
+        }, { quoted: mek });
         
     } catch (e) {
         console.log(e);
         reply("An error occurred. Please try again later.");
     }
-});  
+});
